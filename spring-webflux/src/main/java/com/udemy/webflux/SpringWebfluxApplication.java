@@ -1,11 +1,14 @@
 package com.udemy.webflux;
 
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 
 import com.udemy.webflux.dao.ProductoDao;
 import com.udemy.webflux.models.documents.Producto;
@@ -18,6 +21,9 @@ public class SpringWebfluxApplication implements CommandLineRunner{
 	@Autowired
 	private ProductoDao dao;
 	
+	@Autowired
+	private ReactiveMongoTemplate mongoTemplate;
+	
 	private static final Logger log = LoggerFactory.getLogger(SpringWebfluxApplication.class);
 
 	public static void main(String[] args) {
@@ -27,7 +33,7 @@ public class SpringWebfluxApplication implements CommandLineRunner{
 	@Override
 	public void run(String... args) throws Exception {
 		
-		
+		mongoTemplate.dropCollection("producto").subscribe();
 		Flux.just(new Producto("Audífonos Shure srh750D", 56.230),
 				new Producto("Interfaz de Audio Focusrite", 45.000),
 				new Producto("Monitor Referencia JBL", 145.000),
@@ -38,7 +44,10 @@ public class SpringWebfluxApplication implements CommandLineRunner{
 				new Producto("Correa Guitarra Ibanez", 15.000),
 				new Producto("Palanca de Trémolo", 8.000)
 				)
-			.flatMap(producto -> dao.save(producto))
+			.flatMap(producto -> {
+				producto.setCreateAt(new Date());
+				return dao.save(producto);
+				})
 			.subscribe(producto -> log.info("Insert: " + producto.getId() + " " + producto.getNombre()));
 		
 	}
